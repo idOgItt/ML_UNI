@@ -130,7 +130,7 @@ class GradientBoostingRegressorManual:
         return self
 
     def predict(self, X):
-        F = self.init_pred.copy()
+        F = np.full(X.shape[0], self.init_pred[0])
         for m in self.models:
             F += self.lr * m.predict(X)
         return F
