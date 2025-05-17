@@ -1,6 +1,7 @@
 import numpy as np
 import copy
 from cross_validation import kfold_split
+from sklearn.base import clone
 
 def bootstrap_sample(X, y, n_samples=None, random_state=None):
     n = X.shape[0] if n_samples is None else n_samples
@@ -207,3 +208,76 @@ class BlendingRegressorManual:
     def predict(self, X):
         base_preds = np.column_stack([m.predict(X) for m in self.bases])
         return self.meta.predict(base_preds)
+
+class BaggingClassifierManual:
+    def __init__(self, base_estimator, n_estimators=10,
+                 max_samples=1.0, random_state=None):
+        self.base = base_estimator
+        self.n = n_estimators
+        self.max_samples = max_samples
+        self.random_state = random_state
+        self.models = []
+
+    def fit(self, X, y):
+        rng = np.random.RandomState(self.random_state)
+        n_samples = X.shape[0]
+        sample_size = int(self.max_samples * n_samples) \
+                        if isinstance(self.max_samples, float) else self.max_samples
+        self.models = []
+        for _ in range(self.n):
+            rs = rng.randint(0, 2 ** 32 - 1)
+            idx = rng.randint(0, n_samples, size=sample_size)
+            Xb, yb = X[idx], y[idx]
+            m = clone(self.base)
+            m.fit(Xb, yb)
+            self.models.append(m)
+        return self
+
+    def predict_proba(self, X):
+        probs = np.stack([m.predict_proba(X)[:, 1] for m in self.models], axis=1)
+        avg = np.mean(probs, axis=1)
+        return np.vstack([1 - avg, avg]).T
+
+    def predict(self, X, threshold=0.5):
+        return (self.predict_proba(X)[:, 1] >= threshold).astype(int)
+
+
+class GradientBoostingClassifierManual:
+    def __init__(self, base_estimator, n_estimators=100, learning_rate=0.1):
+        self.base = base_estimator
+        self.n = n_estimators
+        self.lr = learning_rate
+        self.models = []
+        self.init_F = None
+
+    def _sigmoid(self, x):
+        return 1 / (1 + np.exp(-x))
+
+    def fit(self, X, y):
+        p0 = np.clip(np.mean(y), 1e-6, 1 - 1e-6)
+        self.init_F = np.log(p0 / (1 - p0))
+
+        F = np.full(y.shape, self.init_F, dtype=float)
+        self.models = []
+
+        for m in range(self.n):
+            p = self._sigmoid(F)
+            residual = y - p
+
+            tree = clone(self.base)
+            tree.fit(X, residual)
+            self.models.append(tree)
+
+            F += self.lr * tree.predict(X)
+
+        return self
+
+    def predict_proba(self, X):
+        F = np.full(X.shape[0], self.init_F, dtype=float)
+        for tree in self.models:
+            F += self.lr * tree.predict(X)
+        p = self._sigmoid(F)
+        return np.vstack([1 - p, p]).T
+
+    def predict(self, X, threshold=0.5):
+        return (self.predict_proba(X)[:, 1] >= threshold).astype(int)

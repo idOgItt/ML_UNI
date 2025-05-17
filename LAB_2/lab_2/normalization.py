@@ -36,3 +36,9 @@ def normalize_minmax(X, ref_stats=None):
 
     X_norm = (X - X_min) / range_
     return X_norm, (X_min, X_max)
+
+
+def impute_median(X: pd.DataFrame) -> pd.DataFrame:
+    medians = X.median()
+    X_filled = X.fillna(medians)
+    return X_filled

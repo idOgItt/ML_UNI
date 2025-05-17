@@ -1,5 +1,6 @@
 import numpy as np
-
+from sklearn.model_selection import StratifiedShuffleSplit
+import pandas as pd
 
 def kfold_split(X, n_splits=5, shuffle=False, random_state=None):
     """
@@ -62,3 +63,17 @@ def cross_val_score_manual(model, X, y, cv, scoring):
         scores.append(scoring(y_test, y_pred))
 
     return scores
+
+def train_test_split_stratified(
+    X: pd.DataFrame,
+    y: np.ndarray,
+    test_size: float = 0.2,
+    random_state: int = 42
+):
+    sss = StratifiedShuffleSplit(
+        n_splits=1,
+        test_size=test_size,
+        random_state=random_state
+    )
+    train_idx, val_idx = next(sss.split(X, y))
+    return X.iloc[train_idx], X.iloc[val_idx], y[train_idx], y[val_idx]
