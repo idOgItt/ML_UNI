@@ -80,10 +80,8 @@ class TestMetrics(unittest.TestCase):
         self.assertAlmostEqual(medae, expected)
 
     def test_r2(self):
-        # perfect prediction
         r2 = r2_score_manual(self.y_true, self.y_true)
         self.assertAlmostEqual(r2, 1.0)
-        # constant prediction → R2 <= 0
         r2_const = r2_score_manual(self.y_true, np.full_like(self.y_true, 2.5))
         self.assertLessEqual(r2_const, 0.0)
 
@@ -108,7 +106,6 @@ class TestCrossValidation(unittest.TestCase):
         self.assertEqual(len(splits), 5)
         all_test = []
         for tr, te in splits:
-            # train+test covers all, no overlap
             self.assertTrue(set(tr).isdisjoint(te))
             all_test.extend(te)
         self.assertCountEqual(all_test, X)
@@ -378,7 +375,6 @@ class TestNNUtils(unittest.TestCase):
         X = np.array([[1.],[2.]])
         y = np.array([1., 2.])
         net = TwoLayerNet(n_input=1, n_hidden=2, n_output=1)
-        # One forward + backward + update step
         A2 = net.forward(X)
         loss_before, grads = net.backward(A2, y)
         net.update_parameters(grads, lr=0.1)

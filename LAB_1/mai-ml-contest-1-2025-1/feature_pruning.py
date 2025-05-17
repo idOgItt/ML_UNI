@@ -10,19 +10,6 @@ import seaborn as sns
 def auto_prune_correlated_features(df, target_column, feature_pairs, all_features,
                                    method="analytic", threshold=0.95, verbose=True):
     """
-    Автоматический отбор признаков на основе сравнения качества модели по каждой паре
-    коррелирующих признаков. Оставляет только один признак из каждой пары — тот, при
-    котором модель показывает лучший результат по метрике (по умолчанию MSE).
-
-    Parameters:
-    - df: DataFrame
-    - target_column: имя колонки с целевой переменной
-    - feature_pairs: список пар коррелирующих признаков [(f1, f2), (f3, f4), ...]
-    - all_features: исходный список всех числовых признаков
-    - method: метод обучения модели ("analytic", "gradient", "sgd")
-    - threshold: корреляционный порог (не используется в функции, но полезен при отборе пар)
-    - verbose: выводить промежуточные сравнения
-
     Returns:
     - selected_features: список отобранных признаков (без выброшенных)
     """
